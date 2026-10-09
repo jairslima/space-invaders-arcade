@@ -6,7 +6,7 @@ Space Invaders em modo texto, escrito em Harbour 3.0 (estilo Clipper), com a exp
 - Mover e atirar ao mesmo tempo (estado real das teclas via função C embutida, com fallback automático)
 - 3 vidas, vida extra a cada 2000 pontos, ondas cada vez mais difíceis, recordes com iniciais
 - Efeitos sonoros sintetizados na hora, com prioridade (canal único): marcha grave, tiro, explosões com ruído, UFO
-- Autoteste sem interface: `invaders.exe --selftest` (53 verificações)
+- Autoteste sem interface: `invaders.exe --selftest` (54 verificações) e modos `--bot`/`--botdie`
 
 ## Controles
 

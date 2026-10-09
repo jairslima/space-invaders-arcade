@@ -23,7 +23,11 @@ REVIEW.md / BEST_PRACTICES.md - segunda opinião e guia de reuso
 ```
 build.bat                     REM compila invaders.exe
 invaders.exe                  REM joga (terminal mínimo 80x25)
-invaders.exe --selftest       REM 53 verificações, grava invaders_selftest.log, código de saída 0/1
+invaders.exe --selftest       REM 54 verificações, grava invaders_selftest.log, código de saída 0/1
+invaders.exe --bot            REM bot joga sozinho, invulnerável, ~100 s (invaders_bot.log)
+invaders.exe --botdie         REM bot joga até o game over
+invaders.exe --play           REM pula a abertura (depuração)
+Se o jogo cair: ler invaders_crash.log ao lado do .exe
 ```
 
 ## Decisões arquiteturais
@@ -35,9 +39,9 @@ invaders.exe --selftest       REM 53 verificações, grava invaders_selftest.log
 - Som com prioridade e duração (canal único); efeito de menor prioridade é descartado.
 - Teclado direto (`GetAsyncKeyState` + foco da janela) com fallback para `Inkey` e histerese.
 
-## Estado atual (2026-10-08)
+## Estado atual (2026-10-09)
 
-Compila sem avisos, autoteste 53/53. Revisão do Grok aplicada (bomba x tiro, bunker, HUD, dificuldade, prioridades de som, timer). Aguarda teste de jogabilidade do usuário (KeyDown no terminal dele, sensação de velocidade e som).
+Compila sem avisos, autoteste 54/54, bot 5 ondas limpas e game over sem erro. Incidente corrigido em 2026-10-09: o jogo fechava após o ENTER (nome de som march2.00 por `%` + hb_ntos, ver BEST_PRACTICES). Revisão do Grok aplicada. Aguarda teste de jogabilidade do usuário (KeyDown no terminal dele, velocidade e som).
 
 ## Próximos passos
 

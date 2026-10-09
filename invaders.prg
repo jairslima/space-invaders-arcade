@@ -48,6 +48,14 @@ STATIC s_nBusyUntil := 0
 STATIC s_nBusyPrio := 0
 STATIC s_nAsync := 0             // 0 desconhecido, 1 teclado direto OK, -1 usar Inkey
 STATIC s_nMiss := 0
+STATIC s_nTickMs := TICK_MS      // duracao do tick (o modo --bot acelera)
+STATIC s_lBot := .F.             // modo bot: joga sozinho, para teste de fluxo real
+STATIC s_lGod := .F.
+STATIC s_aProf := { 0, 0, 0, 0, 0, 0, 0, 0 }
+STATIC s_nProfT := 0
+STATIC s_nBotUntil := 0
+STATIC s_nBotTicks := 0
+STATIC s_nBotWaves := 0
 
 STATIC s_aAl                     // invasores vivos [fileira][coluna]
 STATIC s_nOx, s_nOy, s_nDir, s_nFrame, s_nStepCnt, s_nMarch
@@ -64,6 +72,7 @@ PROCEDURE Main( cArg )
 
    hb_gtInfo( HB_GTI_WINTITLE, "Space Invaders Arcade by Jair Lima" )
 
+   ErrorBlock( {| oErr | CrashLog( oErr ) } )
    TimerRes( 1 )
    LoadHi()
 
@@ -81,9 +90,24 @@ PROCEDURE Main( cArg )
    SetCursor( SC_NONE )
    SetColor( "W/N" )
 
-   DO WHILE TitleScreen()
+   IF cArg != NIL .AND. Lower( cArg ) == "--play"       // depuracao: pula a abertura
       PlayGame()
-   ENDDO
+   ELSEIF cArg != NIL .AND. Lower( cArg ) $ "--bot|--botdie"   // teste de fluxo real: bot joga acelerado
+      s_lBot := .T.
+      s_lGod := ( Lower( cArg ) == "--bot" )               // --bot: invulneravel (ondas); --botdie: ate o game over
+      s_nTickMs := 3
+      s_nBotUntil := hb_MilliSeconds() + IIF( s_lGod, 100000, 150000 )
+      PlayGame()
+      hb_MemoWrit( hb_DirBase() + "invaders_bot.log", ;
+         "ticks=" + hb_ntos( s_nBotTicks ) + " ondas_limpas=" + hb_ntos( s_nBotWaves ) + ;
+         " pontos=" + hb_ntos( s_nScore ) + " onda=" + hb_ntos( s_nLevel ) + ;
+         " vidas=" + hb_ntos( s_nLives ) + " fim=ok" + hb_eol() + ;
+         "perfil_ms (entrada,nave,tiro,formacao,bombas,ufo+fx+hud,espera)=" + hb_ValToExp( s_aProf ) + hb_eol() )
+   ELSE
+      DO WHILE TitleScreen()
+         PlayGame()
+      ENDDO
+   ENDIF
 
    SetColor( "W/N" )
    CLS
@@ -92,6 +116,27 @@ PROCEDURE Main( cArg )
    ?
 
 RETURN
+
+// Erro de execucao: o console do GTWIN fecha logo em seguida, entao grava um log
+// (descricao, operacao e pilha de chamadas) ao lado do .exe antes de sair.
+STATIC FUNCTION CrashLog( oErr )
+
+   LOCAL cTxt := "Space Invaders Arcade by Jair Lima - erro de execucao" + hb_eol() + ;
+      "Descricao: " + oErr:description + hb_eol() + ;
+      "Operacao : " + IIF( ValType( oErr:operation ) == "C", oErr:operation, "" ) + hb_eol() + ;
+      "Subsist. : " + IIF( ValType( oErr:subSystem ) == "C", oErr:subSystem, "" ) + ;
+      " cod " + hb_ntos( oErr:genCode ) + hb_eol() + "Pilha:" + hb_eol()
+   LOCAL n := 1
+
+   DO WHILE ! Empty( ProcName( n ) )
+      cTxt += "  " + ProcName( n ) + "(" + hb_ntos( ProcLine( n ) ) + ")" + hb_eol()
+      n++
+   ENDDO
+   hb_MemoWrit( hb_DirBase() + "invaders_crash.log", cTxt )
+   SetCursor( SC_NORMAL )
+   QUIT
+
+RETURN NIL
 
 // ---------------------------------------------------------------------
 // Tela de abertura
@@ -216,10 +261,11 @@ STATIC PROCEDURE PlayGame()
       hb_keyClear()
 
       nTick := 0
-      nNext := hb_MilliSeconds() + TICK_MS
+      nNext := hb_MilliSeconds() + s_nTickMs
 
       DO WHILE AliveCount() > 0 .AND. ! lLanded .AND. ! s_lHit .AND. ! lQuit
 
+         Prof( 0 )
          // ---------- entrada ----------
          nDx := 0
          nEv := 0
@@ -241,7 +287,7 @@ STATIC PROCEDURE PlayGame()
                Banner( "PAUSED - press any key", "Y+/N" )
                Inkey( 0 )
                RenderAll()
-               nNext := hb_MilliSeconds() + TICK_MS
+               nNext := hb_MilliSeconds() + s_nTickMs
             CASE k == K_ESC
                Banner( "QUIT GAME? (S/N)", "R+/N" )
                DO WHILE .T.
@@ -255,7 +301,7 @@ STATIC PROCEDURE PlayGame()
                ENDDO
                IF ! lQuit
                   RenderAll()
-                  nNext := hb_MilliSeconds() + TICK_MS
+                  nNext := hb_MilliSeconds() + s_nTickMs
                ENDIF
             ENDCASE
             IF lQuit
@@ -280,8 +326,19 @@ STATIC PROCEDURE PlayGame()
             nDx := Max( -2, Min( 2, nEv ) )
          ENDIF
 
+         IF s_lBot
+            nDx := BotMove()
+            lFire := .T.
+            s_nBotTicks++
+            IF hb_MilliSeconds() > s_nBotUntil
+               lQuit := .T.
+               EXIT
+            ENDIF
+         ENDIF
+
          nTick++
 
+         Prof( 1 )
          // ---------- nave ----------
          IF nDx != 0
             hb_DispOutAt( ROW_SHIP, s_nShipX, "   ", "W/N" )
@@ -303,23 +360,24 @@ STATIC PROCEDURE PlayGame()
             ENDIF
          ENDIF
 
+         Prof( 2 )
          // ---------- tiro do jogador (nao anda no tick em que nasceu) ----------
          IF s_lPb .AND. ! lJust
             MovePlayerBullet()
          ENDIF
 
+         Prof( 3 )
          // ---------- formacao ----------
          s_nStepCnt++
          nAlive := AliveCount()
-         IF nAlive > 0 .AND. s_nStepCnt >= StepTicks( nAlive, s_nLevel )
+         IF nAlive > 0 .AND. s_nStepCnt >= StepTicks( nAlive, s_nLevel ) * IIF( s_lGod, 4, 1 )
             s_nStepCnt := 0
             nOldOy := s_nOy
             StepFormation()
             ClearBunkersUnderAliens()
             DrawAliens( nOldOy )
             DrawBunkers()
-            s_nMarch := s_nMarch % 4 + 1
-            PlaySfx( "march" + hb_ntos( s_nMarch ), 1 )
+            PlaySfx( NextMarch(), 1 )
             IF s_lPb .AND. CheckBulletHit()
                s_lPb := .F.                  // sem apagar: o acerto ja redesenhou a celula
             ENDIF
@@ -329,6 +387,7 @@ STATIC PROCEDURE PlayGame()
             ENDIF
          ENDIF
 
+         Prof( 4 )
          // ---------- bombas ----------
          nBombEvery := Max( 2, 3 - Int( s_nLevel / 3 ) )
          IF nTick % nBombEvery == 0
@@ -336,6 +395,7 @@ STATIC PROCEDURE PlayGame()
          ENDIF
          EnemyFire()
 
+         Prof( 5 )
          // ---------- disco voador e efeitos ----------
          UpdateUfo( nTick )
          UpdateFx()
@@ -344,13 +404,15 @@ STATIC PROCEDURE PlayGame()
             HudAll()
          ENDIF
 
+         Prof( 6 )
          // ---------- ritmo ----------
          DO WHILE hb_MilliSeconds() < nNext
             SleepMs( 1 )
          ENDDO
-         nNext += TICK_MS
-         IF hb_MilliSeconds() > nNext + 3 * TICK_MS
-            nNext := hb_MilliSeconds() + TICK_MS
+         nNext += s_nTickMs
+         IF hb_MilliSeconds() > nNext + 3 * s_nTickMs
+         Prof( 7 )
+            nNext := hb_MilliSeconds() + s_nTickMs
          ENDIF
 
       ENDDO
@@ -376,6 +438,7 @@ STATIC PROCEDURE PlayGame()
       ENDIF
 
       // onda limpa
+      s_nBotWaves++
       s_nScore += 100 * s_nLevel
       CheckExtra()
       HudAll()
@@ -394,9 +457,40 @@ STATIC PROCEDURE PlayGame()
       hb_keyClear()
    ENDIF
 
-   CheckHi( s_nScore )
+   IF ! s_lBot
+      CheckHi( s_nScore )
+   ENDIF
 
 RETURN
+
+// proximo som da marcha (march1..march4). Int() e obrigatorio: em Harbour o
+// operador % devolve numero com casas decimais e hb_ntos(2.00) vira "2.00",
+// o que gerava o nome inexistente "march2.00" e derrubava o jogo.
+STATIC FUNCTION NextMarch()
+
+   s_nMarch := Int( s_nMarch % 4 ) + 1
+
+RETURN "march" + hb_ntos( Int( s_nMarch ) )
+
+// modo bot: mira na coluna viva mais proxima da nave e atira sempre
+STATIC FUNCTION BotMove()
+
+   LOCAL c, r, nBest := 9999, nTarget := s_nShipX + 1, x
+
+   FOR c := 1 TO NCOLS
+      FOR r := 1 TO NROWS
+         IF s_aAl[ r ][ c ]
+            x := s_nOx + ( c - 1 ) * 4 + 1
+            IF Abs( x - ( s_nShipX + 1 ) ) < nBest
+               nBest := Abs( x - ( s_nShipX + 1 ) )
+               nTarget := x
+            ENDIF
+            EXIT
+         ENDIF
+      NEXT
+   NEXT
+
+RETURN IIF( nTarget > s_nShipX + 1, 1, IIF( nTarget < s_nShipX + 1, -1, 0 ) )
 
 STATIC PROCEDURE ProbeAsync( nVk )
 
@@ -767,7 +861,7 @@ STATIC PROCEDURE MoveBombs()
          PlaySfx( "bunker", 2 )
          lGone := .T.
       ELSEIF ShipHit( b[ 1 ], b[ 2 ] )
-         s_lHit := .T.
+         s_lHit := ! s_lGod
          lGone := .T.
       ELSEIF b[ 2 ] >= ROW_FLOOR
          lGone := .T.
@@ -1218,6 +1312,9 @@ STATIC PROCEDURE PlaySfx( cName, nPrio )
    IF ! s_lSnd .OR. s_cTmp == NIL .OR. ! CanPlay( nPrio, nNow )
       RETURN
    ENDIF
+   IF ! hb_HHasKey( s_hDur, cName )       // nome inexistente nunca derruba o jogo (o autoteste cobre os nomes)
+      RETURN
+   ENDIF
    s_nBusyUntil := nNow + s_hDur[ cName ]
    s_nBusyPrio := nPrio
    wapi_PlaySound( s_cTmp + "inv_" + cName + ".wav", NIL, SND_FLAGS )
@@ -1387,6 +1484,18 @@ STATIC PROCEDURE SelfTest()
          Bin2L( SubStr( a, 5, 4 ) ) == Len( a ) - 8 .AND. hb_HHasKey( s_hDur, cWav ) .AND. s_hDur[ cWav ] > 0, "WAV " + cWav )
    NEXT
 
+   // 10a. nomes da marcha: sempre march1..march4 e existentes (bug "march2.00")
+   s_nMarch := 0
+   nHit := 0
+   FOR i := 1 TO 12
+      a := NextMarch()
+      IF ! a == "march" + hb_ntos( Int( ( i - 1 ) % 4 ) + 1 ) .OR. ! hb_HHasKey( s_hDur, a )
+         nHit++
+         cLog += "FALHA nome de marcha: " + a + hb_eol()
+      ENDIF
+   NEXT
+   Eval( bChk, nHit == 0, "NextMarch gera march1..4 em ciclo, todos com WAV" )
+
    // 10b. tiro x bomba: simula o cruzamento (bomba anda a cada 3 ticks, tiro a cada 1)
    //      para todas as fases possiveis de defasagem; nenhuma pode atravessar
    s_lSnd := .F.
@@ -1453,3 +1562,17 @@ STATIC PROCEDURE SelfTest()
    ErrorLevel( IIF( nBad == 0, 0, 1 ) )
 
 RETURN
+
+// perfil de tempo por secao do tick (so no modo bot): acumula ms desde a ultima marca
+STATIC FUNCTION Prof( n )
+
+   LOCAL nNow := hb_MilliSeconds()
+
+   IF s_lBot
+      IF n > 0
+         s_aProf[ n + 1 ] += nNow - s_nProfT
+      ENDIF
+      s_nProfT := nNow
+   ENDIF
+
+RETURN NIL

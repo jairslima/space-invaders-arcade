@@ -10,3 +10,6 @@ secrets.*
 *.pkl
 invaders.sco
 invaders_selftest.log
+invaders_crash.log
+invaders_bot.log
+invaders_dbg.log

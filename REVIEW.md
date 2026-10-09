@@ -40,3 +40,7 @@ Revisão feita pelo Grok (modelo DeepSeek Pro, via WSL, somente texto, com o có
 - Medir o flicker do `DrawAliens` no terminal real e, se houver, limpar só a faixa ocupada em vez de linhas inteiras.
 - Invulnerabilidade curta ao renascer e som próprio para vida extra (baixa prioridade).
 - Marcha com 4 notas mais distintas (opinião; hoje 98, 87, 78 e 73 Hz, como o original).
+
+## Incidente pós-entrega (2026-10-09): fechava após o ENTER
+
+Nem o autoteste nem a revisão do Grok pegaram: `s_nMarch % 4 + 1` devolve número com decimais e `hb_ntos` produziu `march2.00`, nome inexistente na tabela de sons, causando *Bound error* em `PlaySfx` na segunda passada da marcha. Corrigido com `Int()` em `NextMarch()`, guarda em `PlaySfx` (nome inexistente é ignorado), teste que percorre `march1..4` e, principalmente, os modos `--bot`/`--botdie` + `ErrorBlock` com `invaders_crash.log`, que passam a exercitar o fluxo real. O Grok não tinha como ver esse bug lendo só o código, o que reforça: revisão de código não substitui executar o jogo.
