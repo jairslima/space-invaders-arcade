@@ -13,3 +13,10 @@ invaders_selftest.log
 invaders_crash.log
 invaders_bot.log
 invaders_dbg.log
+
+# Seguranca - auditoria automatica
+.env.*
+*.pem
+credentials.*
+*.p12
+*.pfx
