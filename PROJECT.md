@@ -56,3 +56,7 @@ Compila sem avisos, autoteste 54/54, bot 5 ondas limpas e game over sem erro. In
 ## Atualização 2026-10-12: teclado direto sem depender do foco
 
 O teste do usuário mostrou lag nas setas (modo de reserva por eventos do Inkey, com atraso inicial de ~0,5 s). A checagem de foco da função C falhava no Windows Terminal. Agora: `KEYRAW` (estado físico da tecla) + `KEYFOCUS` (foco do conhost); `KeyDown()` vale se há foco OU se a janela recebeu algum evento de teclado nos últimos 2,5 s. O modo começa em "direto" e a linha 2 do HUD mostra `TECLADO DIRETO` ou `TECLADO EVENTOS`. Confirmado pelo usuário em 2026-10-12.
+
+## Atualização 2026-10-13: cores
+
+Cores corrigidas: as letras C, M e Y não existem no Harbour 3.0 (viram cinza ou preto); o jogo agora usa BG, RB e GR e o autoteste tem a verificação `cores validas no fonte`. Ver `BEST_PRACTICES.md`.

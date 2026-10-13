@@ -155,21 +155,21 @@ STATIC FUNCTION TitleScreen()
       { "#####", "#    ", "#### ", "#    ", "#####" }, ;
       { "#### ", "#   #", "#### ", "#  # ", "#   #" }, ;
       { " ####", "#    ", " ### ", "    #", "#### " } }
-   LOCAL aClr := { "R+/N", "Y+/N", "G+/N", "C+/N", "M+/N", "W+/N" }
+   LOCAL aClr := { "R+/N", "GR+/N", "G+/N", "BG+/N", "RB+/N", "W+/N" }
    LOCAL nTick := 0, nPos := 0, nDir := 1, nFr, k, i, r, cRow, cAt
 
    SetColor( "W/N" )
    CLS
    hb_DispOutAt( 0, 0, PadC( "S P A C E   I N V A D E R S   A R C A D E   by Jair Lima", 80 ), "N/W" )
-   hb_DispOutAt( 2, 0, PadC( "S  P  A  C  E", 80 ), "C+/N" )
+   hb_DispOutAt( 2, 0, PadC( "S  P  A  C  E", 80 ), "BG+/N" )
 
    hb_DispOutAt( 11, 14, "* SCORE ADVANCE TABLE *", "W/N" )
    hb_DispOutAt( 13, 14, "<oOo>  = ? MYSTERY", "R+/N" )
-   hb_DispOutAt( 14, 14, "/M\    = 30 PTS", "M+/N" )
-   hb_DispOutAt( 15, 14, "{O}    = 20 PTS", "C+/N" )
+   hb_DispOutAt( 14, 14, "/M\    = 30 PTS", "RB+/N" )
+   hb_DispOutAt( 15, 14, "{O}    = 20 PTS", "BG+/N" )
    hb_DispOutAt( 16, 14, "<W>    = 10 PTS", "G+/N" )
 
-   hb_DispOutAt( 11, 48, "HIGH SCORES", "Y+/N" )
+   hb_DispOutAt( 11, 48, "HIGH SCORES", "GR+/N" )
    FOR i := 1 TO Len( s_aHi )
       hb_DispOutAt( 12 + i, 48, Str( i, 1 ) + "  " + s_aHi[ i ][ 1 ] + "  " + StrZero( s_aHi[ i ][ 2 ], 6 ), ;
          IIF( i == 1, "G+/N", "W/N" ) )
@@ -199,7 +199,7 @@ STATIC FUNCTION TitleScreen()
       cAt := 10 + nPos
       FOR i := 0 TO 7
          hb_DispOutAt( 20, cAt + i * 5, Sprite( 1 + ( i % 3 ) * 2, nFr ), ;
-            { "M+/N", "C+/N", "G+/N" }[ i % 3 + 1 ] )
+            { "RB+/N", "BG+/N", "G+/N" }[ i % 3 + 1 ] )
       NEXT
       IF nTick % 6 == 0
          nPos += nDir
@@ -287,7 +287,7 @@ STATIC PROCEDURE PlayGame()
                s_lSnd := ! s_lSnd
             CASE k == Asc( "p" ) .OR. k == Asc( "P" )
                PlaySfx( "pause", 5 )
-               Banner( "PAUSED - press any key", "Y+/N" )
+               Banner( "PAUSED - press any key", "GR+/N" )
                Inkey( 0 )
                RenderAll()
                nNext := hb_MilliSeconds() + s_nTickMs
@@ -364,7 +364,7 @@ STATIC PROCEDURE PlayGame()
             IF CheckBulletHit()              // tiro que nasce dentro de um invasor ja acerta
                s_lPb := .F.
             ELSE
-               hb_DispOutAt( s_nPby, s_nPbx, "|", "Y+/N" )
+               hb_DispOutAt( s_nPby, s_nPbx, "|", "GR+/N" )
             ENDIF
          ENDIF
 
@@ -450,7 +450,7 @@ STATIC PROCEDURE PlayGame()
       s_nScore += 100 * s_nLevel
       CheckExtra()
       HudAll()
-      Banner( "WAVE CLEARED!", "Y+/N" )
+      Banner( "WAVE CLEARED!", "GR+/N" )
       PlaySfx( "wave", 5 )
       Inkey( 1.8 )
       s_nLevel++
@@ -814,7 +814,7 @@ STATIC PROCEDURE MovePlayerBullet()
       s_lPb := .F.
       RETURN
    ENDIF
-   hb_DispOutAt( s_nPby, s_nPbx, "|", "Y+/N" )
+   hb_DispOutAt( s_nPby, s_nPbx, "|", "GR+/N" )
 
 RETURN
 
@@ -832,7 +832,7 @@ STATIC FUNCTION BulletBombHit()
       IF s_nPbx == b[ 1 ] .AND. Abs( s_nPby - b[ 2 ] ) <= 1
          hb_DispOutAt( b[ 2 ], b[ 1 ], " ", "W/N" )
          hb_ADel( s_aBombs, i, .T. )
-         AddFx( b[ 1 ], b[ 2 ], "*", "Y+/N", 3 )
+         AddFx( b[ 1 ], b[ 2 ], "*", "GR+/N", 3 )
          PlaySfx( "bunker", 2 )
          RETURN .T.
       ENDIF
@@ -848,7 +848,7 @@ STATIC PROCEDURE KillAlien( r, c )
    s_nScore += AlienPoints( r )
    PlaySfx( "alienhit", 3 )
    hb_DispOutAt( y, x, "   ", "W/N" )
-   AddFx( x, y, "\|/", "Y+/N", 4 )
+   AddFx( x, y, "\|/", "GR+/N", 4 )
    CheckExtra()
 
 RETURN
@@ -858,7 +858,7 @@ STATIC PROCEDURE DrawShots()
    LOCAL b
 
    IF s_lPb
-      hb_DispOutAt( s_nPby, s_nPbx, "|", "Y+/N" )
+      hb_DispOutAt( s_nPby, s_nPbx, "|", "GR+/N" )
    ENDIF
    FOR EACH b IN s_aBombs
       hb_DispOutAt( b[ 2 ], b[ 1 ], IIF( b[ 2 ] % 2 == 0, "!", "i" ), "R+/N" )
@@ -878,7 +878,7 @@ STATIC PROCEDURE MoveBombs()
 
       IF s_lPb .AND. s_nPbx == b[ 1 ] .AND. Abs( s_nPby - b[ 2 ] ) <= 1
          KillPlayerBullet()
-         AddFx( b[ 1 ], b[ 2 ], "*", "Y+/N", 3 )
+         AddFx( b[ 1 ], b[ 2 ], "*", "GR+/N", 3 )
          PlaySfx( "bunker", 2 )
          lGone := .T.
       ELSEIF ShipHit( b[ 1 ], b[ 2 ] )
@@ -968,7 +968,7 @@ STATIC PROCEDURE KillUfo()
 
    hb_DispOutAt( ROW_UFO, s_nUx, "     ", "W/N" )
    s_nScore += s_nUpts
-   AddFx( s_nUx, ROW_UFO, "+" + hb_ntos( s_nUpts ), "Y+/N", 25 )
+   AddFx( s_nUx, ROW_UFO, "+" + hb_ntos( s_nUpts ), "GR+/N", 25 )
    PlaySfx( "ufohit", 4 )
    s_lUfo := .F.
    s_nUfoWait := hb_RandomInt( 600, 900 )
@@ -1014,7 +1014,7 @@ STATIC PROCEDURE PlayerDeath()
 
    PlaySfx( "playerdie", 5 )
    FOR i := 1 TO 14
-      hb_DispOutAt( ROW_SHIP, s_nShipX, IIF( i % 2 == 1, "*#*", "#*#" ), IIF( i % 2 == 1, "R+/N", "Y+/N" ) )
+      hb_DispOutAt( ROW_SHIP, s_nShipX, IIF( i % 2 == 1, "*#*", "#*#" ), IIF( i % 2 == 1, "R+/N", "GR+/N" ) )
       Inkey( 0.1 )
    NEXT
    hb_DispOutAt( ROW_SHIP, s_nShipX, "   ", "W/N" )
@@ -1047,9 +1047,9 @@ STATIC FUNCTION RowColor( r )
 
    DO CASE
    CASE r == 1
-      RETURN "M+/N"
+      RETURN "RB+/N"
    CASE r <= 3
-      RETURN "C+/N"
+      RETURN "BG+/N"
    ENDCASE
 
 RETURN "G+/N"
@@ -1109,9 +1109,9 @@ STATIC PROCEDURE HudAll()
    hb_DispOutAt( 1, 3, "SCORE", "W/N" )
    hb_DispOutAt( 1, 9, StrZero( Min( s_nScore, 999999 ), 6 ), "G+/N" )
    hb_DispOutAt( 1, 22, "HI-SCORE", "W/N" )
-   hb_DispOutAt( 1, 31, StrZero( Min( nHi, 999999 ), 6 ), "Y+/N" )
+   hb_DispOutAt( 1, 31, StrZero( Min( nHi, 999999 ), 6 ), "GR+/N" )
    hb_DispOutAt( 1, 44, "WAVE", "W/N" )
-   hb_DispOutAt( 1, 49, StrZero( Min( s_nLevel, 99 ), 2 ), "C+/N" )
+   hb_DispOutAt( 1, 49, StrZero( Min( s_nLevel, 99 ), 2 ), "BG+/N" )
    hb_DispOutAt( 1, 54, "LIVES", "W/N" )
    hb_DispOutAt( 1, 60, PadR( RTrim( Replicate( "/^\ ", s_nLives ) ), 19 ), "G+/N" )   // 5 vidas = cols 60-78
    s_lHud := .F.
@@ -1200,7 +1200,7 @@ STATIC FUNCTION EnterInitials( nScore )
    SetColor( "W/N" )
    CLS
    hb_DispOutAt( 0, 0, PadC( "S P A C E   I N V A D E R S   A R C A D E   by Jair Lima", 80 ), "N/W" )
-   hb_DispOutAt( 6, 0, PadC( "*** NEW HIGH SCORE ***", 80 ), "Y+/N" )
+   hb_DispOutAt( 6, 0, PadC( "*** NEW HIGH SCORE ***", 80 ), "GR+/N" )
    hb_DispOutAt( 8, 0, PadC( "SCORE " + StrZero( Min( nScore, 999999 ), 6 ), 80 ), "G+/N" )
    hb_DispOutAt( 11, 0, PadC( "ENTER YOUR INITIALS", 80 ), "W/N" )
    hb_DispOutAt( 20, 0, PadC( "CIMA/BAIXO: letra   DIREITA/ENTER: proxima   ESQ: voltar", 80 ), "N+/N" )
@@ -1388,11 +1388,61 @@ HB_FUNC( KEYFOCUS )
 // Autoteste sem interface (invaders --selftest): regras deterministas
 // ---------------------------------------------------------------------
 
+// Varre um .prg e devolve a lista de strings de cor com letras que o Harbour NAO reconhece.
+// Letras validas: N B G R W (+ BG ciano, RB magenta, GR amarelo/marrom, U I X), com + ou * depois.
+// C, M e Y NAO existem: C+/N vira cinza (8) e Y/N vira preto (0). Devolve NIL se o arquivo nao existe.
+STATIC FUNCTION ColorLint( cFile )
+
+   LOCAL cSrc, i, cCh, cCur := "", lIn := .F., aBad := {}, aSides, cSide, cLet, j, lBad
+
+   IF ! File( cFile )
+      RETURN NIL
+   ENDIF
+   cSrc := MemoRead( cFile )
+   FOR i := 1 TO Len( cSrc )
+      cCh := SubStr( cSrc, i, 1 )
+      IF cCh == Chr( 34 )
+         IF lIn
+            lIn := .F.
+            // candidata: so letras, + e *, com uma unica barra, sem espacos
+            lBad := ( Len( cCur ) >= 3 .AND. Len( cCur ) <= 12 .AND. ( Len( cCur ) - Len( StrTran( cCur, "/", "" ) ) ) == 1 )
+            IF lBad
+               FOR j := 1 TO Len( cCur )
+                  IF ! SubStr( cCur, j, 1 ) $ "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+*/"
+                     lBad := .F.
+                     EXIT
+                  ENDIF
+               NEXT
+            ENDIF
+            IF lBad
+               aSides := hb_ATokens( cCur, "/" )
+               IF Len( aSides ) == 2 .AND. ! Empty( aSides[ 1 ] ) .AND. ! Empty( aSides[ 2 ] )
+                  FOR EACH cSide IN aSides
+                     cLet := Upper( StrTran( StrTran( cSide, "+", "" ), "*", "" ) )
+                     IF ! ( "|" + cLet + "|" ) $ "|N|B|G|BG|R|RB|GR|W|U|I|X|"
+                        AAdd( aBad, cCur )
+                        EXIT
+                     ENDIF
+                  NEXT
+               ENDIF
+            ENDIF
+         ELSE
+            lIn := .T.
+            cCur := ""
+         ENDIF
+      ELSEIF lIn
+         cCur += cCh
+      ENDIF
+   NEXT
+
+RETURN aBad
+
 STATIC PROCEDURE SelfTest()
 
    LOCAL nBad := 0, cLog := "", cWav, a, i, r, c, cMin, cMax, nOx0, nHit, nT0
 
    // ---- helper de verificacao ----
+   LOCAL aBadClr
    LOCAL bChk := {| lOk, cMsg | cLog += IIF( lOk, "ok    ", "FALHA " ) + cMsg + hb_eol(), IIF( lOk, NIL, nBad++ ) }
 
    s_nLevel := 1
@@ -1583,6 +1633,14 @@ STATIC PROCEDURE SelfTest()
       ENDIF
    NEXT
    cLog += "ok    varredura de 200 rodadas de tiro inimigo" + hb_eol()
+
+   // cores: o proprio fonte nao pode usar letras de cor que o Harbour nao reconhece (C, M, Y)
+   aBadClr := ColorLint( hb_DirBase() + "invaders.prg" )
+   IF aBadClr == NIL
+      cLog += "info  fonte nao encontrado ao lado do exe: verificacao de cores ignorada" + hb_eol()
+   ELSE
+      Eval( bChk, Empty( aBadClr ), "cores validas no fonte (invalidas: " + hb_ValToExp( aBadClr ) + ")" )
+   ENDIF
 
    cLog += "falhas=" + hb_ntos( nBad ) + hb_eol()
    hb_MemoWrit( hb_DirBase() + "invaders_selftest.log", cLog )
