@@ -46,8 +46,10 @@ STATIC s_lSnd := .T.
 STATIC s_hDur := { => }
 STATIC s_nBusyUntil := 0
 STATIC s_nBusyPrio := 0
-STATIC s_nAsync := 0             // 0 desconhecido, 1 teclado direto OK, -1 usar Inkey
+STATIC s_nAsync := 1             // 1 teclado direto (GetAsyncKeyState), -1 fallback por eventos do Inkey
 STATIC s_nMiss := 0
+STATIC s_nLastKey := 0           // instante do ultimo evento de teclado recebido pela janela
+STATIC s_cModeShown := ""
 STATIC s_nTickMs := TICK_MS      // duracao do tick (o modo --bot acelera)
 STATIC s_lBot := .F.             // modo bot: joga sozinho, para teste de fluxo real
 STATIC s_lGod := .F.
@@ -271,6 +273,7 @@ STATIC PROCEDURE PlayGame()
          nEv := 0
          lFire := .F.
          DO WHILE ( k := Inkey() ) != 0
+            s_nLastKey := hb_MilliSeconds()
             DO CASE
             CASE k == K_LEFT .OR. k == Asc( "a" ) .OR. k == Asc( "A" )
                nEv--
@@ -310,6 +313,11 @@ STATIC PROCEDURE PlayGame()
          ENDDO
          IF lQuit
             EXIT
+         ENDIF
+
+         IF s_cModeShown != IIF( s_nAsync == 1, "TECLADO DIRETO", "TECLADO EVENTOS" )
+            s_cModeShown := IIF( s_nAsync == 1, "TECLADO DIRETO", "TECLADO EVENTOS" )
+            hb_DispOutAt( 2, 60, PadR( s_cModeShown, 19 ), IIF( s_nAsync == 1, "N+/N", "R/N" ) )
          ENDIF
 
          IF s_nAsync == 1
@@ -463,6 +471,19 @@ STATIC PROCEDURE PlayGame()
 
 RETURN
 
+// Estado de uma tecla, valido so se a janela do jogo "esta ouvindo": ou o foco bate
+// com a janela do console (conhost), ou ela recebeu algum evento de teclado nos
+// ultimos 2,5 s. A segunda condicao existe porque no Windows Terminal o foco nao e
+// identificavel pela API do console; GetAsyncKeyState e global e leria teclas de
+// outros programas.
+STATIC FUNCTION KeyDown( nVk )
+
+   IF ! KeyRaw( nVk )
+      RETURN .F.
+   ENDIF
+
+RETURN KeyFocus() .OR. ( hb_MilliSeconds() - s_nLastKey ) < 2500
+
 // proximo som da marcha (march1..march4). Int() e obrigatorio: em Harbour o
 // operador % devolve numero com casas decimais e hb_ntos(2.00) vira "2.00",
 // o que gerava o nome inexistente "march2.00" e derrubava o jogo.
@@ -498,7 +519,7 @@ STATIC PROCEDURE ProbeAsync( nVk )
    // pressionada, o teclado direto funciona (liga ou religa); so cai para o
    // fallback depois de 8 eventos seguidos sem nenhuma tecla vista como pressionada
    // (toques muito rapidos nao desligam o modo direto)
-   IF KeyDown( nVk )
+   IF KeyRaw( nVk )
       s_nMiss := 0
       s_nAsync := 1
    ELSE
@@ -1345,14 +1366,20 @@ HB_FUNC( SLEEPMS )
    Sleep( ( DWORD ) hb_parni( 1 ) );
 }
 
-HB_FUNC( KEYDOWN )
+// estado fisico da tecla (global, sem checar foco)
+HB_FUNC( KEYRAW )
+{
+   hb_retl( ( GetAsyncKeyState( hb_parni( 1 ) ) & 0x8000 ) != 0 );
+}
+
+// a janela do console (ou o terminal que a hospeda) esta em primeiro plano?
+HB_FUNC( KEYFOCUS )
 {
    HWND hCon  = GetConsoleWindow();
    HWND hFg   = GetForegroundWindow();
    HWND hRoot = hCon ? GetAncestor( hCon, GA_ROOTOWNER ) : NULL;
-   HB_BOOL bFocus = ( hFg != NULL ) && ( hFg == hCon || hFg == hRoot );
 
-   hb_retl( bFocus && ( GetAsyncKeyState( hb_parni( 1 ) ) & 0x8000 ) != 0 );
+   hb_retl( ( hFg != NULL ) && ( hFg == hCon || hFg == hRoot ) );
 }
 
 #pragma ENDDUMP
